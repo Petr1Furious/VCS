@@ -15,6 +15,7 @@ use crate::{
     },
 };
 
+/// Initialize repository in the given path
 pub fn init_repository(path: &PathBuf) -> Result<String, std::io::Error> {
     let dir = path.join(".vcs");
     fs::create_dir(&dir)?;
@@ -28,6 +29,7 @@ pub fn init_repository(path: &PathBuf) -> Result<String, std::io::Error> {
     Ok(commit)
 }
 
+/// Get files and folders of the given commit
 pub fn get_commit_contents(
     repo_dir: &PathBuf,
     commit: &String,
@@ -35,10 +37,12 @@ pub fn get_commit_contents(
     get_contents(&repo_dir.join(".vcs").join("commits").join(commit), false)
 }
 
+/// Get commit folder
 pub fn get_commit_dir(repo_dir: &PathBuf, commit: &String) -> PathBuf {
     repo_dir.join(".vcs").join("commits").join(commit)
 }
 
+/// Get file changes in the repository relative to the given commit
 pub fn get_file_changes_commit(
     repo_dir: &PathBuf,
     commit: &String,
@@ -49,6 +53,7 @@ pub fn get_file_changes_commit(
     get_file_changes(repo_dir, &contents, &commit_dir, &commit_contents)
 }
 
+/// Commit the given files and folders
 pub fn commit_contents(
     repo_dir: &PathBuf,
     message: &String,
@@ -68,6 +73,7 @@ pub fn commit_contents(
     Ok(commit)
 }
 
+/// Commit from the repo folder
 pub fn commit(
     repo_dir: &PathBuf,
     message: &String,
@@ -77,6 +83,7 @@ pub fn commit(
     commit_contents(repo_dir, message, branch, &contents)
 }
 
+/// Get a branch containing the commit
 pub fn get_branch_with_commit(
     repo_dir: &PathBuf,
     commit: &String,
@@ -96,6 +103,7 @@ pub fn get_branch_with_commit(
     Ok(res_branch)
 }
 
+// Replace repo contents with the contents of the given commit
 pub fn jump_to_commit(repo_dir: &PathBuf, commit: &String) -> Result<(), std::io::Error> {
     remove_repo_files(repo_dir)?;
     set_commit(repo_dir, commit)?;
@@ -106,10 +114,12 @@ pub fn jump_to_commit(repo_dir: &PathBuf, commit: &String) -> Result<(), std::io
     copy_files_from_commit(repo_dir, commit)
 }
 
+/// Create a new branch from the given commit
 pub fn new_branch(repo_dir: &PathBuf, new_branch: &String) -> Result<(), std::io::Error> {
     add_branch_commit(repo_dir, new_branch, &get_commit(repo_dir)?)
 }
 
+/// Get commits history
 pub fn get_commit_history(repo_dir: &PathBuf) -> Result<Vec<String>, std::io::Error> {
     let cur_commit = get_commit(repo_dir)?;
     let cur_branch = get_branch(repo_dir)?;

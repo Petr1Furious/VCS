@@ -18,6 +18,7 @@ impl CommitAndBranch {
     }
 }
 
+/// Get commit and branch from state.json
 fn get_commit_and_branch(repo_dir: &PathBuf) -> Result<CommitAndBranch, std::io::Error> {
     if !repo_dir.join(".vcs").join("state.json").exists() {
         set_commit_and_branch(
@@ -31,14 +32,17 @@ fn get_commit_and_branch(repo_dir: &PathBuf) -> Result<CommitAndBranch, std::io:
     .unwrap())
 }
 
+/// Get the commit from state.json
 pub fn get_commit(repo_dir: &PathBuf) -> Result<String, std::io::Error> {
     Ok(get_commit_and_branch(repo_dir)?.commit)
 }
 
+/// Get the branch from state.json
 pub fn get_branch(repo_dir: &PathBuf) -> Result<String, std::io::Error> {
     Ok(get_commit_and_branch(repo_dir)?.branch)
 }
 
+/// Set commit and branch to state.json
 fn set_commit_and_branch(
     repo_dir: &PathBuf,
     commit_and_branch: CommitAndBranch,
@@ -51,6 +55,7 @@ fn set_commit_and_branch(
     )
 }
 
+/// Set the commit to state.json
 pub fn set_commit(repo_dir: &PathBuf, commit: &String) -> Result<(), std::io::Error> {
     set_commit_and_branch(
         repo_dir,
@@ -58,6 +63,7 @@ pub fn set_commit(repo_dir: &PathBuf, commit: &String) -> Result<(), std::io::Er
     )
 }
 
+/// Set the branch to state.json
 pub fn set_branch(repo_dir: &PathBuf, branch: &String) -> Result<(), std::io::Error> {
     set_commit_and_branch(
         repo_dir,
@@ -97,9 +103,10 @@ impl CommitList {
     }
 }
 
+/// Get commit list from commit_list.json
 pub fn get_commit_list(repo_dir: &PathBuf) -> Result<CommitList, std::io::Error> {
     if !repo_dir.join(".vcs").join("commit_list.json").exists() {
-        save_commit_list(repo_dir, CommitList::new())?;
+        set_commit_list(repo_dir, CommitList::new())?;
     }
     Ok(serde_json::from_str::<CommitList>(
         fs::read_to_string(repo_dir.join(".vcs").join("commit_list.json"))?.as_str(),
@@ -107,22 +114,22 @@ pub fn get_commit_list(repo_dir: &PathBuf) -> Result<CommitList, std::io::Error>
     .unwrap())
 }
 
-pub fn save_commit_list(
-    repo_dir: &PathBuf,
-    commits_data: CommitList,
-) -> Result<(), std::io::Error> {
+/// Set commit list to commit_list.json
+pub fn set_commit_list(repo_dir: &PathBuf, commits_data: CommitList) -> Result<(), std::io::Error> {
     fs::write(
         repo_dir.join(".vcs").join("commit_list.json"),
         serde_json::to_string(&commits_data).unwrap().as_bytes(),
     )
 }
 
+/// Add commit data to commit list from commit_list.json
 pub fn add_commit_data(repo_dir: &PathBuf, commit_data: CommitData) -> Result<(), std::io::Error> {
     let mut commits_data = get_commit_list(&repo_dir)?;
     commits_data.commits.push(commit_data);
-    save_commit_list(&repo_dir, commits_data)
+    set_commit_list(&repo_dir, commits_data)
 }
 
+/// Get commit data by commit hash from commit_list.json
 pub fn get_commit_data(
     repo_dir: &PathBuf,
     commit: &String,
@@ -168,16 +175,18 @@ impl BranchList {
     }
 }
 
-pub fn save_branch_list(repo_dir: &PathBuf, branch_list: BranchList) -> Result<(), std::io::Error> {
+/// Set the branch list to branch_list.json
+pub fn set_branch_list(repo_dir: &PathBuf, branch_list: BranchList) -> Result<(), std::io::Error> {
     fs::write(
         repo_dir.join(".vcs").join("branch_list.json"),
         serde_json::to_string(&branch_list).unwrap().as_bytes(),
     )
 }
 
+/// Get the branch list from branch_list.json
 pub fn get_branch_list(repo_dir: &PathBuf) -> Result<BranchList, std::io::Error> {
     if !repo_dir.join(".vcs").join("branch_list.json").exists() {
-        save_branch_list(repo_dir, BranchList::new())?;
+        set_branch_list(repo_dir, BranchList::new())?;
     }
     Ok(serde_json::from_str::<BranchList>(
         fs::read_to_string(repo_dir.join(".vcs").join("branch_list.json"))?.as_str(),
@@ -185,6 +194,7 @@ pub fn get_branch_list(repo_dir: &PathBuf) -> Result<BranchList, std::io::Error>
     .unwrap())
 }
 
+/// Add the commit to the given branch and save it to branch_list.json
 pub fn add_branch_commit(
     repo_dir: &PathBuf,
     branch: &String,
@@ -203,9 +213,10 @@ pub fn add_branch_commit(
         }
     }
 
-    save_branch_list(repo_dir, branch_list)
+    set_branch_list(repo_dir, branch_list)
 }
 
+/// Get commits of the given branch from branch_list.json
 pub fn get_commits(
     repo_dir: &PathBuf,
     branch: &String,
@@ -218,6 +229,7 @@ pub fn get_commits(
     }
 }
 
+/// Remove the branch from branch_list.json
 pub fn remove_branch(repo_dir: &PathBuf, branch: &String) -> Result<(), std::io::Error> {
     let mut branch_list = get_branch_list(repo_dir)?;
     let found = branch_list
@@ -226,7 +238,7 @@ pub fn remove_branch(repo_dir: &PathBuf, branch: &String) -> Result<(), std::io:
         .position(|x| x.name == *branch);
     if found.is_some() {
         branch_list.branches.remove(found.unwrap());
-        save_branch_list(repo_dir, branch_list)?;
+        set_branch_list(repo_dir, branch_list)?;
     }
     Ok(())
 }

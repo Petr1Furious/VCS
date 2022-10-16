@@ -1,6 +1,7 @@
 use sha1::{Digest, Sha1};
 use std::{
     env,
+    ffi::OsString,
     fs::{self, File},
     io::{BufReader, Error, Read},
     path::{Component, PathBuf},
@@ -15,6 +16,7 @@ pub enum FileChange {
     Removed,
 }
 
+/// Hash a slice
 fn hash(data_to_hash: &[u8]) -> String {
     let mut hasher = Sha1::new();
     hasher.update(data_to_hash);
@@ -22,6 +24,7 @@ fn hash(data_to_hash: &[u8]) -> String {
     format!("{:x}", result)
 }
 
+/// Get the repo dir from any folder inside of it
 pub fn get_repo_dir() -> Result<PathBuf, std::io::Error> {
     let mut cur = env::current_dir().unwrap();
     while !cur.join(".vcs").as_path().exists() {
@@ -35,6 +38,7 @@ pub fn get_repo_dir() -> Result<PathBuf, std::io::Error> {
     Ok(cur)
 }
 
+/// Get all folders and files from the given path
 pub fn get_contents(path: &PathBuf, ignore_vcs: bool) -> Result<Vec<PathBuf>, std::io::Error> {
     let mut contents: Vec<PathBuf> = Vec::new();
     for entry in WalkDir::new(path) {
@@ -62,10 +66,12 @@ pub fn get_contents(path: &PathBuf, ignore_vcs: bool) -> Result<Vec<PathBuf>, st
     Ok(contents)
 }
 
+/// Add a slice to the hash
 fn add_to_hash(cur_hash: &String, to_add: &[u8]) -> String {
     hash([cur_hash.as_bytes(), to_add].concat().as_slice())
 }
 
+/// Get the hash to the given files and folders
 pub fn get_contents_hash(contents: &Vec<PathBuf>) -> Result<String, std::io::Error> {
     let mut sorted_contents = contents.clone();
     sorted_contents.sort();
@@ -80,6 +86,7 @@ pub fn get_contents_hash(contents: &Vec<PathBuf>) -> Result<String, std::io::Err
     Ok(hash)
 }
 
+/// Copy files to a new commit, the head directory must be included
 pub fn copy_files_to_commit(
     repo_dir: &PathBuf,
     contents: &Vec<PathBuf>,
@@ -87,7 +94,15 @@ pub fn copy_files_to_commit(
 ) -> Result<(), std::io::Error> {
     let commit_dir = (&repo_dir).join(".vcs").join("commits").join(commit);
     for entry in contents {
-        let new_path = commit_dir.join(entry.strip_prefix(&repo_dir).unwrap());
+        let mut relative_dir = entry.strip_prefix(&repo_dir).unwrap();
+        let mut relative_dir_components = relative_dir.components();
+        if relative_dir_components.next() == Some(Component::Normal(&OsString::from(".vcs"))) {
+            relative_dir_components.next();
+            relative_dir_components.next();
+            relative_dir = relative_dir_components.as_path();
+        }
+
+        let new_path = commit_dir.join(relative_dir);
         if entry.is_file() {
             fs::copy(&entry, new_path)?;
         } else {
@@ -97,6 +112,7 @@ pub fn copy_files_to_commit(
     Ok(())
 }
 
+/// Remove all files except for the ones in .vcs/ from the repository
 pub fn remove_repo_files(repo_dir: &PathBuf) -> Result<(), std::io::Error> {
     let mut contents = get_contents(repo_dir, true)?;
     contents = contents[1..].to_vec();
@@ -114,6 +130,7 @@ pub fn remove_repo_files(repo_dir: &PathBuf) -> Result<(), std::io::Error> {
     Ok(())
 }
 
+/// Copy files from the given commit, the repo folder must be empty
 pub fn copy_files_from_commit(repo_dir: &PathBuf, commit: &String) -> Result<(), std::io::Error> {
     let commit_dir = (&repo_dir).join(".vcs").join("commits").join(commit);
     let commit_contents = get_contents(&commit_dir, false)?[1..].to_vec();
@@ -129,6 +146,7 @@ pub fn copy_files_from_commit(repo_dir: &PathBuf, commit: &String) -> Result<(),
     Ok(())
 }
 
+/// Check if files are equal
 pub fn files_equal(path1: &PathBuf, path2: &PathBuf) -> Result<bool, std::io::Error> {
     let file1 = File::open(path1)?;
     let file2 = File::open(path2)?;
@@ -159,6 +177,7 @@ pub fn files_equal(path1: &PathBuf, path2: &PathBuf) -> Result<bool, std::io::Er
     Ok(true)
 }
 
+/// Get all files changes in the first folder relative to the second one
 pub fn get_file_changes(
     dir: &PathBuf,
     contents: &Vec<PathBuf>,

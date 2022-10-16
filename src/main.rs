@@ -21,6 +21,7 @@ use commands::{
 
 use crate::repo_file_manager::FileChange;
 
+/// Print file changes in git format
 fn print_file_changes(file_changes: &Vec<(FileChange, PathBuf)>) {
     for file_change in file_changes {
         let mut string_change = String::new();
@@ -49,6 +50,7 @@ fn print_file_changes(file_changes: &Vec<(FileChange, PathBuf)>) {
     }
 }
 
+/// Make the word plural if the count is not equal to 1
 fn check_for_plural(word: String, count: usize) -> String {
     if count != 1 {
         word + "s"
@@ -57,6 +59,7 @@ fn check_for_plural(word: String, count: usize) -> String {
     }
 }
 
+/// Print numbers of modified, added and removed files
 fn print_changes_count(file_changes: &Vec<(FileChange, PathBuf)>) {
     let mut modified_count: usize = 0;
     let mut added_count: usize = 0;

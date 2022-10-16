@@ -19,6 +19,7 @@ pub enum MergeResult {
     MergeWithMaster,
 }
 
+/// Merge the given branch to master
 pub fn merge(branch: &String) -> Result<MergeResult, std::io::Error> {
     if branch.clone() == String::from("master") {
         return Ok(MergeResult::MergeWithMaster);
@@ -47,6 +48,10 @@ pub fn merge(branch: &String) -> Result<MergeResult, std::io::Error> {
         get_file_changes(&branch_dir, &branch_contents, &common_dir, &common_contents)?;
 
     let mut files_to_merge: Vec<PathBuf> = Vec::new();
+    for entry in branch_contents.iter() {
+        files_to_merge.push(entry.clone());
+    }
+
     for entry in file_changes_master {
         let same = file_changes_branch.iter().find(|x| {
             x.1.strip_prefix(&branch_dir).unwrap() == entry.1.strip_prefix(&master_dir).unwrap()
@@ -61,10 +66,6 @@ pub fn merge(branch: &String) -> Result<MergeResult, std::io::Error> {
         } else {
             files_to_merge.push(entry.1);
         }
-    }
-
-    for entry in file_changes_branch {
-        files_to_merge.push(entry.1);
     }
 
     commit_contents(

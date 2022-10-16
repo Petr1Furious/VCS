@@ -17,6 +17,7 @@ pub enum JumpResult {
     },
 }
 
+/// Jump to the given commit
 pub fn jump_commit(commit: &String) -> Result<JumpResult, std::io::Error> {
     let repo_dir = get_repo_dir()?;
 
@@ -37,6 +38,7 @@ pub fn jump_commit(commit: &String) -> Result<JumpResult, std::io::Error> {
     }
 }
 
+/// Jump to the last commit of the given branch
 pub fn jump_branch(branch: &String) -> Result<JumpResult, std::io::Error> {
     let repo_dir = get_repo_dir()?;
 

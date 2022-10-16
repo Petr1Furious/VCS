@@ -13,6 +13,7 @@ pub struct CommitResult {
     pub file_changes: Vec<(FileChange, PathBuf)>,
 }
 
+/// Commit current files in the repository
 pub fn commit(message: String) -> Result<CommitResult, std::io::Error> {
     let repo_dir = get_repo_dir()?;
     let commit = get_commit(&repo_dir)?;

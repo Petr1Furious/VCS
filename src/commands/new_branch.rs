@@ -10,6 +10,7 @@ pub enum NewBranchResult {
     AlreadyExists,
 }
 
+/// Create a new branch from the current commit
 pub fn new_branch(new_branch: &String) -> Result<NewBranchResult, std::io::Error> {
     let repo_dir = get_repo_dir()?;
 

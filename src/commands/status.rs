@@ -11,6 +11,7 @@ pub struct LogData {
     pub file_changes: Vec<(FileChange, PathBuf)>,
 }
 
+/// Print changes to be committed
 pub fn status() -> Result<LogData, std::io::Error> {
     let repo_dir = get_repo_dir()?;
     let file_changes = get_file_changes_commit(&repo_dir, &get_commit(&repo_dir)?)?;

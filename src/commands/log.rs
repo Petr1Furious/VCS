@@ -10,6 +10,7 @@ pub struct LogResult {
     pub commit_list: Vec<(CommitData, Vec<(FileChange, PathBuf)>)>,
 }
 
+/// Log commits history until the current one
 pub fn log() -> Result<LogResult, std::io::Error> {
     let repo_dir = get_repo_dir()?;
     let commit_history = get_commit_history(&repo_dir)?;

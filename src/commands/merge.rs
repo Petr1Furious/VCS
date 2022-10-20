@@ -32,6 +32,9 @@ pub fn merge(branch: &String) -> Result<MergeResult, std::io::Error> {
         .pop()
         .unwrap();
     let last_branch_commit = get_commits(&repo_dir, &branch)?.unwrap().pop().unwrap();
+    if last_master_commit != get_commit(&repo_dir)? {
+        return Ok(MergeResult::NotLastCommit);
+    }
     let common_commit = get_commits(&repo_dir, &branch)?.unwrap().remove(0);
 
     let master_contents = get_commit_contents(&repo_dir, &last_master_commit)?;

@@ -20,10 +20,9 @@ pub fn log() -> Result<LogResult, std::io::Error> {
     };
     let mut prev_commit: Option<String> = None;
     for commit in commit_history {
-        let mut prev_file_changes: Vec<(FileChange, PathBuf)> = Vec::new();
         if prev_commit.is_some() {
             let prev_commit_value = prev_commit.unwrap();
-            prev_file_changes = get_file_changes(
+            let prev_file_changes = get_file_changes(
                 &get_commit_dir(&repo_dir, &prev_commit_value),
                 &get_commit_contents(&repo_dir, &prev_commit_value)?,
                 &get_commit_dir(&repo_dir, &commit),

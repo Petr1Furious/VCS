@@ -17,9 +17,9 @@ use crate::{
 
 /// Initialize repository in the given path
 pub fn init_repository(path: &PathBuf) -> Result<String, std::io::Error> {
-    let dir = path.join(".vcs");
-    fs::create_dir(&dir)?;
-    fs::create_dir(&dir.join("commits"))?;
+    let working_dir = path.join(".vcs");
+    fs::create_dir(&working_dir)?;
+    fs::create_dir(&working_dir.join("commits"))?;
 
     let commit = commit(
         path,
@@ -124,24 +124,24 @@ pub fn get_commit_history(repo_dir: &PathBuf) -> Result<Vec<String>, std::io::Er
     let cur_commit = get_commit(repo_dir)?;
     let cur_branch = get_branch(repo_dir)?;
 
-    let mut res: Vec<String> = Vec::new();
+    let mut commit_history: Vec<String> = Vec::new();
     if cur_branch != String::from("master") {
         let cur_branch_commits = get_commits(repo_dir, &cur_branch)?.unwrap();
         for commit in get_commits(repo_dir, &String::from("master"))?.unwrap() {
             if commit == cur_branch_commits[0] {
                 break;
             }
-            res.push(commit);
+            commit_history.push(commit);
         }
     }
 
     for commit in get_commits(repo_dir, &cur_branch)?.unwrap() {
-        res.push(commit.clone());
+        commit_history.push(commit.clone());
         if commit == cur_commit {
             break;
         }
     }
 
-    res.reverse();
-    Ok(res)
+    commit_history.reverse();
+    Ok(commit_history)
 }

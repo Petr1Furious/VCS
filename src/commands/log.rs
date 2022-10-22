@@ -15,7 +15,7 @@ pub fn log() -> Result<LogResult, std::io::Error> {
     let repo_dir = get_repo_dir()?;
     let commit_history = get_commit_history(&repo_dir)?;
 
-    let mut res = LogResult {
+    let mut log_result = LogResult {
         commit_list: Vec::new(),
     };
     let mut prev_commit: Option<String> = None;
@@ -28,12 +28,12 @@ pub fn log() -> Result<LogResult, std::io::Error> {
                 &get_commit_dir(&repo_dir, &commit),
                 &get_commit_contents(&repo_dir, &commit)?,
             )?;
-            res.commit_list.last_mut().unwrap().1 = prev_file_changes;
+            log_result.commit_list.last_mut().unwrap().1 = prev_file_changes;
         }
-        res.commit_list
+        log_result.commit_list
             .push((get_commit_data(&repo_dir, &commit)?.unwrap(), Vec::new()));
         prev_commit = Some(commit);
     }
 
-    Ok(res)
+    Ok(log_result)
 }

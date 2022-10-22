@@ -26,16 +26,16 @@ fn hash(data_to_hash: &[u8]) -> String {
 
 /// Get the repo dir from any folder inside of it
 pub fn get_repo_dir() -> Result<PathBuf, std::io::Error> {
-    let mut cur = env::current_dir().unwrap();
-    while !cur.join(".vcs").as_path().exists() {
-        if !cur.pop() {
+    let mut cur_dir = env::current_dir().unwrap();
+    while !cur_dir.join(".vcs").as_path().exists() {
+        if !cur_dir.pop() {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 "Not a VCS repository",
             ));
         }
     }
-    Ok(cur)
+    Ok(cur_dir)
 }
 
 /// Get all folders and files from the given path
@@ -148,28 +148,28 @@ pub fn copy_files_from_commit(repo_dir: &PathBuf, commit: &String) -> Result<(),
 
 /// Check if files are equal
 pub fn files_equal(path1: &PathBuf, path2: &PathBuf) -> Result<bool, std::io::Error> {
+    if path1.as_path().is_file() != path2.as_path().is_file() {
+        return Ok(false);
+    }
+    if path1.is_dir() {
+        return Ok(true);
+    }
+
     let file1 = File::open(path1)?;
     let file2 = File::open(path2)?;
     let mut reader1 = BufReader::new(file1);
     let mut reader2 = BufReader::new(file2);
 
-    let mut buf1 = [0; 10000];
-    let mut buf2 = [0; 10000];
+    const BUF_SIZE: usize = 10000;
+    let mut buf1 = [0; BUF_SIZE];
+    let mut buf2 = [0; BUF_SIZE];
     loop {
-        if let Result::Ok(n1) = reader1.read(&mut buf1) {
-            if n1 > 0 {
-                if let Result::Ok(n2) = reader2.read(&mut buf2) {
-                    if n1 == n2 {
-                        if buf1 == buf2 {
-                            continue;
-                        }
-                    }
-                    return Ok(false);
-                }
-            } else {
-                break;
-            }
-        } else {
+        let size1 = reader1.read(&mut buf1)?;
+        let size2 = reader2.read(&mut buf2)?;
+        if size1 != size2 || buf1 != buf2 {
+            return Ok(false);
+        }
+        if size1 == 0 {
             break;
         }
     }
@@ -179,7 +179,7 @@ pub fn files_equal(path1: &PathBuf, path2: &PathBuf) -> Result<bool, std::io::Er
 
 /// Get all files changes in the first folder relative to the second one
 pub fn get_file_changes(
-    dir: &PathBuf,
+    first_dir: &PathBuf,
     contents: &Vec<PathBuf>,
     other_dir: &PathBuf,
     relative_to: &Vec<PathBuf>,
@@ -189,10 +189,10 @@ pub fn get_file_changes(
         used_relative_to.push((entry, false));
     }
 
-    let mut res: Vec<(FileChange, PathBuf)> = Vec::new();
+    let mut file_changes: Vec<(FileChange, PathBuf)> = Vec::new();
     for entry in contents.iter() {
         let mut cur_change = FileChange::Added;
-        let relative1 = entry.strip_prefix(dir).unwrap();
+        let relative1 = entry.strip_prefix(first_dir).unwrap();
         for commit_entry in used_relative_to.iter_mut() {
             let relative2 = commit_entry.0.strip_prefix(&other_dir).unwrap();
             if relative1 == relative2 {
@@ -206,18 +206,18 @@ pub fn get_file_changes(
             }
         }
         if cur_change != FileChange::Equal {
-            res.push((cur_change, entry.clone()));
+            file_changes.push((cur_change, entry.clone()));
         }
     }
 
     for commit_entry in used_relative_to.iter() {
         if !commit_entry.1 {
-            res.push((
+            file_changes.push((
                 FileChange::Removed,
-                dir.join(commit_entry.0.strip_prefix(&other_dir).unwrap()),
+                first_dir.join(commit_entry.0.strip_prefix(&other_dir).unwrap()),
             ));
         }
     }
 
-    Ok(res)
+    Ok(file_changes)
 }

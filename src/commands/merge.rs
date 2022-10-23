@@ -1,9 +1,8 @@
 use std::path::PathBuf;
 
 use crate::{
-    json_files::{get_commit, get_commits, remove_branch},
     repo_file_manager::{files_equal, get_file_changes, get_repo_dir, FileChange},
-    vcs_state_manager::{commit_contents, get_commit_contents, get_commit_dir},
+    vcs_state_manager::VcsStateManager,
 };
 
 #[derive(PartialEq, Eq, Debug)]
@@ -21,28 +20,35 @@ pub enum MergeResult {
 }
 
 /// Merge the given branch to master
-pub fn merge_in_repo(repo_dir: &PathBuf, branch: &String) -> Result<MergeResult, std::io::Error> {
+pub fn merge_in_repo(repo_dir: PathBuf, branch: &String) -> Result<MergeResult, std::io::Error> {
+    let mut vcs_state_manager = VcsStateManager::init(repo_dir);
+
     if branch.clone() == String::from("master") {
         return Ok(MergeResult::MergeWithMaster);
     }
 
-    let last_master_commit = get_commits(&repo_dir, &String::from("master"))?
+    let last_master_commit = vcs_state_manager
+        .get_commits(&String::from("master"))?
         .unwrap()
         .pop()
         .unwrap();
-    let last_branch_commit = get_commits(&repo_dir, &branch)?.unwrap().pop().unwrap();
-    if last_master_commit != get_commit(&repo_dir)? {
+    let last_branch_commit = vcs_state_manager
+        .get_commits(&branch)?
+        .unwrap()
+        .pop()
+        .unwrap();
+    if last_master_commit != vcs_state_manager.get_commit()? {
         return Ok(MergeResult::NotLastCommit);
     }
-    let common_commit = get_commits(&repo_dir, &branch)?.unwrap().remove(0);
+    let common_commit = vcs_state_manager.get_commits(&branch)?.unwrap().remove(0);
 
-    let master_contents = get_commit_contents(&repo_dir, &last_master_commit)?;
-    let branch_contents = get_commit_contents(&repo_dir, &last_branch_commit)?;
-    let common_contents = get_commit_contents(&repo_dir, &common_commit)?;
+    let master_contents = vcs_state_manager.get_commit_contents(&last_master_commit)?;
+    let branch_contents = vcs_state_manager.get_commit_contents(&last_branch_commit)?;
+    let common_contents = vcs_state_manager.get_commit_contents(&common_commit)?;
 
-    let master_dir = get_commit_dir(&repo_dir, &last_master_commit);
-    let branch_dir = get_commit_dir(&repo_dir, &last_branch_commit);
-    let common_dir = get_commit_dir(&repo_dir, &common_commit);
+    let master_dir = vcs_state_manager.get_commit_dir(&last_master_commit);
+    let branch_dir = vcs_state_manager.get_commit_dir(&last_branch_commit);
+    let common_dir = vcs_state_manager.get_commit_dir(&common_commit);
 
     let file_changes_master =
         get_file_changes(&master_dir, &master_contents, &common_dir, &common_contents)?;
@@ -74,21 +80,20 @@ pub fn merge_in_repo(repo_dir: &PathBuf, branch: &String) -> Result<MergeResult,
         }
     }
 
-    commit_contents(
-        &repo_dir,
+    vcs_state_manager.commit_contents(
         &String::from(format!("Merged branch {}", branch)),
         &String::from("master"),
         &files_to_merge,
     )?;
-    let new_commit = get_commit(&repo_dir)?;
+    let new_commit = vcs_state_manager.get_commit()?;
     let file_changes = get_file_changes(
-        &get_commit_dir(&repo_dir, &new_commit),
-        &get_commit_contents(&repo_dir, &new_commit)?,
+        &vcs_state_manager.get_commit_dir(&new_commit),
+        &vcs_state_manager.get_commit_contents(&new_commit)?,
         &master_dir,
         &master_contents,
     )?;
 
-    remove_branch(&repo_dir, branch)?;
+    vcs_state_manager.remove_branch(branch)?;
 
     return Ok(MergeResult::Success {
         commit: new_commit,
@@ -98,5 +103,5 @@ pub fn merge_in_repo(repo_dir: &PathBuf, branch: &String) -> Result<MergeResult,
 
 pub fn merge(branch: &String) -> Result<MergeResult, std::io::Error> {
     let repo_dir = get_repo_dir()?;
-    merge_in_repo(&repo_dir, branch)
+    merge_in_repo(repo_dir, branch)
 }

@@ -30,7 +30,7 @@ fn it_works() {
     }
     fs::create_dir(&repo_dir).unwrap();
 
-    let mut another_branch_commit_history: Vec<String> = vec![init(&repo_dir).unwrap()];
+    let mut another_branch_commit_history: Vec<String> = vec![init(repo_dir.clone()).unwrap()];
 
     modify_file(
         &repo_dir.join("test_file"),
@@ -38,14 +38,14 @@ fn it_works() {
     )
     .unwrap();
     assert_eq!(
-        status_in_repo(&repo_dir).unwrap(),
+        status_in_repo(repo_dir.clone()).unwrap(),
         StatusResult {
             branch: String::from("master"),
             file_changes: vec![(FileChange::Added, repo_dir.join("test_file"))]
         }
     );
 
-    let commit_result = commit_in_repo(&repo_dir, &String::from("message1")).unwrap();
+    let commit_result = commit_in_repo(repo_dir.clone(), &String::from("message1")).unwrap();
     assert!(commit_result.successful);
     assert_eq!(commit_result.branch, String::from("master"));
     assert_eq!(
@@ -61,7 +61,7 @@ fn it_works() {
     )
     .unwrap();
     assert_eq!(
-        status_in_repo(&repo_dir).unwrap(),
+        status_in_repo(repo_dir.clone()).unwrap(),
         StatusResult {
             branch: String::from("master"),
             file_changes: vec![
@@ -71,7 +71,7 @@ fn it_works() {
         }
     );
 
-    let commit_result = commit_in_repo(&repo_dir, &String::from("message2")).unwrap();
+    let commit_result = commit_in_repo(repo_dir.clone(), &String::from("message2")).unwrap();
     assert!(commit_result.successful);
     assert_eq!(commit_result.branch, String::from("master"));
     assert_eq!(
@@ -87,7 +87,7 @@ fn it_works() {
     modify_file(&repo_dir.join("merge_file"), &String::from("content 1")).unwrap();
     fs::remove_file(&repo_dir.join("test_file")).unwrap();
 
-    let commit_result = commit_in_repo(&repo_dir, &String::from("message3")).unwrap();
+    let commit_result = commit_in_repo(repo_dir.clone(), &String::from("message3")).unwrap();
     assert!(commit_result.successful);
     assert_eq!(commit_result.branch, String::from("master"));
     assert_eq!(
@@ -100,7 +100,7 @@ fn it_works() {
     let last_master_commit = commit_result.commit;
 
     assert_eq!(
-        jump_commit_in_repo(&repo_dir, &fork_commit).unwrap(),
+        jump_commit_in_repo(repo_dir.clone(), &fork_commit).unwrap(),
         JumpResult::Success {
             commit: fork_commit.clone(),
             branch: String::from("master")
@@ -109,13 +109,13 @@ fn it_works() {
     assert!(repo_dir.join("test_file").exists());
 
     assert_eq!(
-        new_branch_in_repo(&repo_dir, &String::from("another_branch")).unwrap(),
+        new_branch_in_repo(repo_dir.clone(), &String::from("another_branch")).unwrap(),
         NewBranchResult::Success {
             commit: fork_commit.clone()
         }
     );
     assert_eq!(
-        jump_branch_in_repo(&repo_dir, &String::from("another_branch")).unwrap(),
+        jump_branch_in_repo(repo_dir.clone(), &String::from("another_branch")).unwrap(),
         JumpResult::Success {
             commit: fork_commit.clone(),
             branch: String::from("another_branch")
@@ -124,7 +124,7 @@ fn it_works() {
 
     modify_file(&repo_dir.join("merge_file"), &String::from("content 2")).unwrap();
 
-    let commit_result = commit_in_repo(&repo_dir, &String::from("message4")).unwrap();
+    let commit_result = commit_in_repo(repo_dir.clone(), &String::from("message4")).unwrap();
     assert!(commit_result.successful);
     assert_eq!(commit_result.branch, String::from("another_branch"));
     assert_eq!(
@@ -133,7 +133,7 @@ fn it_works() {
     );
     another_branch_commit_history.push(commit_result.commit);
 
-    let log_result = log_in_repo(&repo_dir).unwrap();
+    let log_result = log_in_repo(repo_dir.clone()).unwrap();
     for (i, commit) in log_result.commit_list.iter().enumerate() {
         assert_eq!(
             commit.0.hash,
@@ -158,12 +158,12 @@ fn it_works() {
     );
 
     assert_eq!(
-        merge_in_repo(&repo_dir, &String::from("another_branch")).unwrap(),
+        merge_in_repo(repo_dir.clone(), &String::from("another_branch")).unwrap(),
         MergeResult::NotLastCommit
     );
 
     assert_eq!(
-        jump_branch_in_repo(&repo_dir, &String::from("master")).unwrap(),
+        jump_branch_in_repo(repo_dir.clone(), &String::from("master")).unwrap(),
         JumpResult::Success {
             commit: last_master_commit.clone(),
             branch: String::from("master")
@@ -171,7 +171,7 @@ fn it_works() {
     );
 
     assert_eq!(
-        merge_in_repo(&repo_dir, &String::from("another_branch")).unwrap(),
+        merge_in_repo(repo_dir.clone(), &String::from("another_branch")).unwrap(),
         MergeResult::MergeConflict {
             path1: repo_dir
                 .join(".vcs")
@@ -188,7 +188,7 @@ fn it_works() {
 
     modify_file(&repo_dir.join("merge_file"), &String::from("content 2")).unwrap();
 
-    let commit_result = commit_in_repo(&repo_dir, &String::from("message5")).unwrap();
+    let commit_result = commit_in_repo(repo_dir.clone(), &String::from("message5")).unwrap();
     assert!(commit_result.successful);
     assert_eq!(commit_result.branch, String::from("master"));
     assert_eq!(
@@ -196,7 +196,7 @@ fn it_works() {
         vec![(FileChange::Modified, repo_dir.join("merge_file")),]
     );
 
-    let merge_result = merge_in_repo(&repo_dir, &String::from("another_branch")).unwrap();
+    let merge_result = merge_in_repo(repo_dir.clone(), &String::from("another_branch")).unwrap();
     match merge_result {
         MergeResult::Success {
             commit,

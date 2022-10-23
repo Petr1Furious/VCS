@@ -103,7 +103,7 @@ pub fn main() {
     let arguments = Arguments::parse();
 
     match arguments.commands {
-        Commands::Init(command) => match init(&Path::new(&command.path).to_path_buf()) {
+        Commands::Init(command) => match init(Path::new(&command.path).to_path_buf()) {
             Ok(commit_hash) => {
                 println!("Initialized VCS repository in {}", command.path);
                 println!("Created commit:");

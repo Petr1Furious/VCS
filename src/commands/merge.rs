@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::{
     json_files::{get_commit, get_commits, remove_branch},
-    repo_file_manager::{files_equal, get_file_changes, FileChange, get_repo_dir},
+    repo_file_manager::{files_equal, get_file_changes, get_repo_dir, FileChange},
     vcs_state_manager::{commit_contents, get_commit_contents, get_commit_dir},
 };
 
@@ -66,7 +66,9 @@ pub fn merge_in_repo(repo_dir: &PathBuf, branch: &String) -> Result<MergeResult,
                 });
             }
         } else {
-            if !files_to_merge.contains(&(&branch_dir).join(entry.1.strip_prefix(&master_dir).unwrap())) {
+            if !files_to_merge
+                .contains(&(&branch_dir).join(entry.1.strip_prefix(&master_dir).unwrap()))
+            {
                 files_to_merge.push(entry.1);
             }
         }

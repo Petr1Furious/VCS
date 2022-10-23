@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::{
     json_files::{get_branch, get_commit},
-    repo_file_manager::{FileChange, get_repo_dir},
+    repo_file_manager::{get_repo_dir, FileChange},
     vcs_state_manager::get_file_changes_commit,
 };
 

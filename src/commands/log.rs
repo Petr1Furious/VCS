@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::{
     json_files::{get_commit_data, CommitData},
-    repo_file_manager::{get_file_changes, FileChange, get_repo_dir},
+    repo_file_manager::{get_file_changes, get_repo_dir, FileChange},
     vcs_state_manager::{get_commit_contents, get_commit_dir, get_commit_history},
 };
 
@@ -29,7 +29,8 @@ pub fn log_in_repo(repo_dir: &PathBuf) -> Result<LogResult, std::io::Error> {
             )?;
             log_result.commit_list.last_mut().unwrap().1 = prev_file_changes;
         }
-        log_result.commit_list
+        log_result
+            .commit_list
             .push((get_commit_data(&repo_dir, &commit)?.unwrap(), Vec::new()));
         prev_commit = Some(commit);
     }

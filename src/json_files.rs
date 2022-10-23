@@ -90,9 +90,9 @@ impl CommitData {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct CommitList {
-    commits: Vec<CommitData>,
+    pub commits: Vec<CommitData>,
 }
 
 impl CommitList {
@@ -122,32 +122,7 @@ pub fn set_commit_list(repo_dir: &PathBuf, commits_data: CommitList) -> Result<(
     )
 }
 
-/// Add commit data to commit list from commit_list.json
-pub fn add_commit_data(repo_dir: &PathBuf, commit_data: CommitData) -> Result<(), std::io::Error> {
-    let mut commits_data = get_commit_list(&repo_dir)?;
-    commits_data.commits.push(commit_data);
-    set_commit_list(&repo_dir, commits_data)
-}
-
-/// Get commit data by commit hash from commit_list.json
-pub fn get_commit_data(
-    repo_dir: &PathBuf,
-    commit: &String,
-) -> Result<Option<CommitData>, std::io::Error> {
-    let commit_list = get_commit_list(repo_dir)?;
-
-    let temp = commit_list
-        .commits
-        .iter()
-        .find(|x| x.hash == commit.clone());
-    if temp.is_none() {
-        return Ok(None);
-    } else {
-        Ok(Some(temp.unwrap().clone()))
-    }
-}
-
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct BranchData {
     pub name: String,
     pub commits: Vec<String>,
@@ -162,7 +137,7 @@ impl BranchData {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct BranchList {
     pub branches: Vec<BranchData>,
 }
@@ -192,53 +167,4 @@ pub fn get_branch_list(repo_dir: &PathBuf) -> Result<BranchList, std::io::Error>
         fs::read_to_string(repo_dir.join(".vcs").join("branch_list.json"))?.as_str(),
     )
     .unwrap())
-}
-
-/// Add the commit to the given branch and save it to branch_list.json
-pub fn add_branch_commit(
-    repo_dir: &PathBuf,
-    branch: &String,
-    commit: &String,
-) -> Result<(), std::io::Error> {
-    let mut branch_list = get_branch_list(repo_dir)?;
-    let found = branch_list.branches.iter_mut().find(|x| x.name == *branch);
-    match found {
-        Some(branch_data) => {
-            branch_data.commits.push(commit.clone());
-        }
-        None => {
-            branch_list
-                .branches
-                .push(BranchData::from(branch.clone(), commit.clone()));
-        }
-    }
-
-    set_branch_list(repo_dir, branch_list)
-}
-
-/// Get commits of the given branch from branch_list.json
-pub fn get_commits(
-    repo_dir: &PathBuf,
-    branch: &String,
-) -> Result<Option<Vec<String>>, std::io::Error> {
-    let branch_list = get_branch_list(repo_dir)?;
-    let branch = branch_list.branches.into_iter().find(|x| x.name == *branch);
-    match branch {
-        Some(branch_data) => Ok(Some(branch_data.commits)),
-        None => Ok(None),
-    }
-}
-
-/// Remove the branch from branch_list.json
-pub fn remove_branch(repo_dir: &PathBuf, branch: &String) -> Result<(), std::io::Error> {
-    let mut branch_list = get_branch_list(repo_dir)?;
-    let found = branch_list
-        .branches
-        .iter_mut()
-        .position(|x| x.name == *branch);
-    if found.is_some() {
-        branch_list.branches.remove(found.unwrap());
-        set_branch_list(repo_dir, branch_list)?;
-    }
-    Ok(())
 }

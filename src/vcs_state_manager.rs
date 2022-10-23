@@ -2,9 +2,8 @@ use std::{fs, path::PathBuf, time::SystemTime};
 
 use crate::{
     json_files::{
-        add_branch_commit, add_commit_data, get_branch, get_branch_list, get_commit,
-        get_commit_data, get_commits, remove_branch, set_branch, set_branch_list, set_commit,
-        BranchList, CommitData,
+        get_branch, get_branch_list, get_commit, get_commit_list, set_branch, set_branch_list,
+        set_commit, set_commit_list, BranchData, BranchList, CommitData, CommitList,
     },
     repo_file_manager::{
         copy_files_from_commit, copy_files_to_commit, get_contents, get_contents_hash,
@@ -16,6 +15,8 @@ pub struct VcsStateManager {
     repo_dir: PathBuf,
     cur_commit: Option<String>,
     cur_branch: Option<String>,
+    commit_list: Option<CommitList>,
+    branch_list: Option<BranchList>,
 }
 
 impl VcsStateManager {
@@ -25,6 +26,8 @@ impl VcsStateManager {
             repo_dir,
             cur_commit: None,
             cur_branch: None,
+            commit_list: None,
+            branch_list: None,
         }
     }
 
@@ -60,42 +63,112 @@ impl VcsStateManager {
         set_branch(&self.repo_dir, branch)
     }
 
+    /// Get commit list from commit_list.json
+    pub fn get_commit_list(self: &mut Self) -> Result<CommitList, std::io::Error> {
+        match self.commit_list.clone() {
+            Some(value) => Ok(value),
+
+            None => {
+                self.commit_list = Some(get_commit_list(&self.repo_dir)?);
+                Ok(self.commit_list.as_ref().unwrap().clone())
+            }
+        }
+    }
+
+    /// Set commit list to commit_list.json
+    pub fn set_commit_list(self: &mut Self, commit_list: CommitList) -> Result<(), std::io::Error> {
+        self.commit_list = Some(commit_list.clone());
+        set_commit_list(&self.repo_dir, commit_list)
+    }
+
+    /// Add commit data to commit list from commit_list.json
     pub fn add_commit_data(self: &mut Self, commit_data: CommitData) -> Result<(), std::io::Error> {
-        add_commit_data(&self.repo_dir, commit_data)
+        let mut commits_data = self.get_commit_list()?;
+        commits_data.commits.push(commit_data);
+        self.set_commit_list(commits_data)
     }
 
-    pub fn get_branch_list(self: &mut Self) -> Result<BranchList, std::io::Error> {
-        get_branch_list(&self.repo_dir)
-    }
-
-    pub fn set_branch_list(self: &mut Self, branch_list: BranchList) -> Result<(), std::io::Error> {
-        set_branch_list(&self.repo_dir, branch_list)
-    }
-
-    pub fn get_commits(
-        self: &mut Self,
-        branch: &String,
-    ) -> Result<Option<Vec<String>>, std::io::Error> {
-        get_commits(&self.repo_dir, branch)
-    }
-
+    /// Get commit data by commit hash from commit_list.json
     pub fn get_commit_data(
         self: &mut Self,
         commit: &String,
     ) -> Result<Option<CommitData>, std::io::Error> {
-        get_commit_data(&self.repo_dir, commit)
+        let commit_list = self.get_commit_list()?;
+
+        let temp = commit_list
+            .commits
+            .iter()
+            .find(|x| x.hash == commit.clone());
+        if temp.is_none() {
+            return Ok(None);
+        } else {
+            Ok(Some(temp.unwrap().clone()))
+        }
     }
 
+    pub fn get_branch_list(self: &mut Self) -> Result<BranchList, std::io::Error> {
+        match self.branch_list.clone() {
+            Some(value) => Ok(value),
+
+            None => {
+                self.branch_list = Some(get_branch_list(&self.repo_dir)?);
+                Ok(self.branch_list.as_ref().unwrap().clone())
+            }
+        }
+    }
+
+    pub fn set_branch_list(self: &mut Self, branch_list: BranchList) -> Result<(), std::io::Error> {
+        self.branch_list = Some(branch_list.clone());
+        set_branch_list(&self.repo_dir, branch_list)
+    }
+
+    /// Add the commit to the given branch and save it to branch_list.json
     pub fn add_branch_commit(
         self: &mut Self,
         branch: &String,
         commit: &String,
     ) -> Result<(), std::io::Error> {
-        add_branch_commit(&self.repo_dir, branch, commit)
+        let mut branch_list = self.get_branch_list()?;
+        let found = branch_list.branches.iter_mut().find(|x| x.name == *branch);
+        match found {
+            Some(branch_data) => {
+                branch_data.commits.push(commit.clone());
+            }
+            None => {
+                branch_list
+                    .branches
+                    .push(BranchData::from(branch.clone(), commit.clone()));
+            }
+        }
+
+        self.set_branch_list(branch_list)
     }
 
+    /// Get commits of the given branch from branch_list.json
+    pub fn get_commits(
+        self: &mut Self,
+        branch: &String,
+    ) -> Result<Option<Vec<String>>, std::io::Error> {
+        let branch_list = self.get_branch_list()?;
+        let branch = branch_list.branches.into_iter().find(|x| x.name == *branch);
+        match branch {
+            Some(branch_data) => Ok(Some(branch_data.commits)),
+            None => Ok(None),
+        }
+    }
+
+    /// Remove the branch from branch_list.json
     pub fn remove_branch(self: &mut Self, branch: &String) -> Result<(), std::io::Error> {
-        remove_branch(&self.repo_dir, branch)
+        let mut branch_list = self.get_branch_list()?;
+        let found = branch_list
+            .branches
+            .iter_mut()
+            .position(|x| x.name == *branch);
+        if found.is_some() {
+            branch_list.branches.remove(found.unwrap());
+            self.set_branch_list(branch_list)?;
+        }
+        Ok(())
     }
 
     /// Initialize repository in the given path

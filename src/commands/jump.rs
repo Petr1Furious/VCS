@@ -2,10 +2,11 @@ use std::path::PathBuf;
 
 use crate::{
     json_files::{get_branch, get_commit, get_commit_data, get_commits},
-    repo_file_manager::{get_repo_dir, FileChange},
+    repo_file_manager::{FileChange, get_repo_dir},
     vcs_state_manager::{get_file_changes_commit, jump_to_commit},
 };
 
+#[derive(PartialEq, Eq, Debug)]
 pub enum JumpResult {
     UncommitedChanges {
         file_changes: Vec<(FileChange, PathBuf)>,
@@ -18,9 +19,7 @@ pub enum JumpResult {
 }
 
 /// Jump to the given commit
-pub fn jump_commit(commit: &String) -> Result<JumpResult, std::io::Error> {
-    let repo_dir = get_repo_dir()?;
-
+pub fn jump_commit_in_repo(repo_dir: &PathBuf, commit: &String) -> Result<JumpResult, std::io::Error> {
     let file_changes = get_file_changes_commit(&repo_dir, &get_commit(&repo_dir)?)?;
     if !file_changes.is_empty() {
         Ok(JumpResult::UncommitedChanges { file_changes })
@@ -39,11 +38,19 @@ pub fn jump_commit(commit: &String) -> Result<JumpResult, std::io::Error> {
 }
 
 /// Jump to the last commit of the given branch
-pub fn jump_branch(branch: &String) -> Result<JumpResult, std::io::Error> {
-    let repo_dir = get_repo_dir()?;
-
+pub fn jump_branch_in_repo(repo_dir: &PathBuf, branch: &String) -> Result<JumpResult, std::io::Error> {
     match get_commits(&repo_dir, branch)? {
-        Some(commits) => jump_commit(commits.last().unwrap()),
+        Some(commits) => jump_commit_in_repo(repo_dir, commits.last().unwrap()),
         None => Ok(JumpResult::NotFound),
     }
+}
+
+pub fn jump_commit(commit: &String) -> Result<JumpResult, std::io::Error> {
+    let repo_dir = get_repo_dir()?;
+    jump_commit_in_repo(&repo_dir, commit)
+}
+
+pub fn jump_branch(commit: &String) -> Result<JumpResult, std::io::Error> {
+    let repo_dir = get_repo_dir()?;
+    jump_branch_in_repo(&repo_dir, commit)
 }

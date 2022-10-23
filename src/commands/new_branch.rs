@@ -1,9 +1,11 @@
+use std::path::PathBuf;
+
 use crate::{
     json_files::{get_branch, get_commit},
-    repo_file_manager::get_repo_dir,
-    vcs_state_manager,
+    vcs_state_manager, repo_file_manager::get_repo_dir,
 };
 
+#[derive(PartialEq, Eq, Debug)]
 pub enum NewBranchResult {
     OnlyFromMaster,
     Success { commit: String },
@@ -11,9 +13,7 @@ pub enum NewBranchResult {
 }
 
 /// Create a new branch from the current commit
-pub fn new_branch(new_branch: &String) -> Result<NewBranchResult, std::io::Error> {
-    let repo_dir = get_repo_dir()?;
-
+pub fn new_branch_in_repo(repo_dir: &PathBuf, new_branch: &String) -> Result<NewBranchResult, std::io::Error> {
     let cur_branch = get_branch(&repo_dir)?;
     if cur_branch != String::from("master") {
         Ok(NewBranchResult::OnlyFromMaster)
@@ -27,4 +27,9 @@ pub fn new_branch(new_branch: &String) -> Result<NewBranchResult, std::io::Error
             Ok(NewBranchResult::AlreadyExists)
         }
     }
+}
+
+pub fn new_branch(new_branch: &String) -> Result<NewBranchResult, std::io::Error> {
+    let repo_dir = get_repo_dir()?;
+    new_branch_in_repo(&repo_dir, new_branch)
 }

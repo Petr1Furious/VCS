@@ -2,10 +2,11 @@ use std::path::PathBuf;
 
 use crate::{
     json_files::{get_commit, get_commits, remove_branch},
-    repo_file_manager::{files_equal, get_file_changes, get_repo_dir, FileChange},
+    repo_file_manager::{files_equal, get_file_changes, FileChange, get_repo_dir},
     vcs_state_manager::{commit_contents, get_commit_contents, get_commit_dir},
 };
 
+#[derive(PartialEq, Eq, Debug)]
 pub enum MergeResult {
     NotLastCommit,
     MergeConflict {
@@ -20,12 +21,10 @@ pub enum MergeResult {
 }
 
 /// Merge the given branch to master
-pub fn merge(branch: &String) -> Result<MergeResult, std::io::Error> {
+pub fn merge_in_repo(repo_dir: &PathBuf, branch: &String) -> Result<MergeResult, std::io::Error> {
     if branch.clone() == String::from("master") {
         return Ok(MergeResult::MergeWithMaster);
     }
-
-    let repo_dir = get_repo_dir()?;
 
     let last_master_commit = get_commits(&repo_dir, &String::from("master"))?
         .unwrap()
@@ -67,7 +66,9 @@ pub fn merge(branch: &String) -> Result<MergeResult, std::io::Error> {
                 });
             }
         } else {
-            files_to_merge.push(entry.1);
+            if !files_to_merge.contains(&(&branch_dir).join(entry.1.strip_prefix(&master_dir).unwrap())) {
+                files_to_merge.push(entry.1);
+            }
         }
     }
 
@@ -91,4 +92,9 @@ pub fn merge(branch: &String) -> Result<MergeResult, std::io::Error> {
         commit: new_commit,
         file_changes,
     });
+}
+
+pub fn merge(branch: &String) -> Result<MergeResult, std::io::Error> {
+    let repo_dir = get_repo_dir()?;
+    merge_in_repo(&repo_dir, branch)
 }

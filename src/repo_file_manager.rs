@@ -8,7 +8,7 @@ use std::{
 };
 use walkdir::WalkDir;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum FileChange {
     Equal,
     Added,

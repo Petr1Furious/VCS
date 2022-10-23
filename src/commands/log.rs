@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::{
     json_files::{get_commit_data, CommitData},
-    repo_file_manager::{get_file_changes, get_repo_dir, FileChange},
+    repo_file_manager::{get_file_changes, FileChange, get_repo_dir},
     vcs_state_manager::{get_commit_contents, get_commit_dir, get_commit_history},
 };
 
@@ -11,8 +11,7 @@ pub struct LogResult {
 }
 
 /// Log commits history until the current one
-pub fn log() -> Result<LogResult, std::io::Error> {
-    let repo_dir = get_repo_dir()?;
+pub fn log_in_repo(repo_dir: &PathBuf) -> Result<LogResult, std::io::Error> {
     let commit_history = get_commit_history(&repo_dir)?;
 
     let mut log_result = LogResult {
@@ -36,4 +35,9 @@ pub fn log() -> Result<LogResult, std::io::Error> {
     }
 
     Ok(log_result)
+}
+
+pub fn log() -> Result<LogResult, std::io::Error> {
+    let repo_dir = get_repo_dir()?;
+    log_in_repo(&repo_dir)
 }

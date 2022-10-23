@@ -1,13 +1,10 @@
-use std::{
-    fs,
-    path::PathBuf,
-    time::SystemTime,
-};
+use std::{fs, path::PathBuf, time::SystemTime};
 
 use crate::{
     json_files::{
         add_branch_commit, add_commit_data, get_branch, get_branch_list, get_commit,
-        get_commit_data, get_commits, remove_branch, set_branch, set_commit, CommitData, set_branch_list, BranchList,
+        get_commit_data, get_commits, remove_branch, set_branch, set_branch_list, set_commit,
+        BranchList, CommitData,
     },
     repo_file_manager::{
         copy_files_from_commit, copy_files_to_commit, get_contents, get_contents_hash,
@@ -24,14 +21,16 @@ pub struct VcsStateManager {
 impl VcsStateManager {
     /// Initialize VCS state manager
     pub fn init(repo_dir: PathBuf) -> Self {
-        Self { repo_dir, cur_commit: None, cur_branch: None }
+        Self {
+            repo_dir,
+            cur_commit: None,
+            cur_branch: None,
+        }
     }
 
     pub fn get_commit(self: &mut Self) -> Result<String, std::io::Error> {
         match self.cur_commit.clone() {
-            Some(value) => {
-                Ok(value)
-            }
+            Some(value) => Ok(value),
 
             None => {
                 self.cur_commit = Some(get_commit(&self.repo_dir)?);
@@ -42,9 +41,7 @@ impl VcsStateManager {
 
     pub fn get_branch(self: &mut Self) -> Result<String, std::io::Error> {
         match self.cur_branch.clone() {
-            Some(value) => {
-                Ok(value)
-            }
+            Some(value) => Ok(value),
 
             None => {
                 self.cur_branch = Some(get_branch(&self.repo_dir)?);
@@ -57,7 +54,7 @@ impl VcsStateManager {
         self.cur_commit = Some(commit.clone());
         set_commit(&self.repo_dir, commit)
     }
-    
+
     pub fn set_branch(self: &mut Self, branch: &String) -> Result<(), std::io::Error> {
         self.cur_branch = Some(branch.clone());
         set_branch(&self.repo_dir, branch)
@@ -150,7 +147,11 @@ impl VcsStateManager {
         copy_files_to_commit(&self.repo_dir, &contents, &commit)?;
         self.set_commit(&commit)?;
         self.set_branch(&branch)?;
-        self.add_commit_data(CommitData::from(commit.clone(), message.clone(), SystemTime::now()))?;
+        self.add_commit_data(CommitData::from(
+            commit.clone(),
+            message.clone(),
+            SystemTime::now(),
+        ))?;
         self.add_branch_commit(&branch, &commit)?;
         Ok(commit)
     }

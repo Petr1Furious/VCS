@@ -80,6 +80,7 @@ pub fn merge_in_repo(repo_dir: PathBuf, branch: &String) -> Result<MergeResult, 
         }
     }
 
+    let old_commit = vcs_state_manager.get_commit()?;
     vcs_state_manager.commit_contents(
         &String::from(format!("Merged branch {}", branch)),
         &String::from("master"),
@@ -94,6 +95,7 @@ pub fn merge_in_repo(repo_dir: PathBuf, branch: &String) -> Result<MergeResult, 
     )?;
 
     vcs_state_manager.remove_branch(branch)?;
+    vcs_state_manager.set_commit(&old_commit).unwrap();
 
     return Ok(MergeResult::Success {
         commit: new_commit,

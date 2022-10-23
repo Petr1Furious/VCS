@@ -243,13 +243,14 @@ impl VcsStateManager {
     pub fn get_branch_with_commit(
         self: &mut Self,
         commit: &String,
+        branch_priority: Option<&String>
     ) -> Result<Option<String>, std::io::Error> {
         let branch_list = self.get_branch_list()?;
 
         let mut res_branch: Option<String> = None;
         for branch in branch_list.branches {
             if branch.commits.iter().find(|x| *x == commit).is_some() {
-                if branch.name != String::from("master") {
+                if branch_priority.is_some() && branch.name == branch_priority.unwrap().clone() {
                     return Ok(Some(branch.name));
                 }
                 res_branch = Some(branch.name);
@@ -260,10 +261,10 @@ impl VcsStateManager {
     }
 
     // Replace repo contents with the contents of the given commit
-    pub fn jump_to_commit(self: &mut Self, commit: &String) -> Result<(), std::io::Error> {
+    pub fn jump_to_commit(self: &mut Self, commit: &String, branch_priority: Option<&String>) -> Result<(), std::io::Error> {
         remove_repo_files(&self.repo_dir)?;
 
-        let branch_with_commit = self.get_branch_with_commit(commit)?.unwrap();
+        let branch_with_commit = self.get_branch_with_commit(commit, branch_priority)?.unwrap();
         self.set_commit(commit)?;
         self.set_branch(&branch_with_commit)?;
         copy_files_from_commit(&self.repo_dir, commit)

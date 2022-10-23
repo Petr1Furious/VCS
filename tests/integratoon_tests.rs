@@ -24,7 +24,7 @@ fn modify_file(path: &PathBuf, content: &String) -> Result<(), std::io::Error> {
 
 #[test]
 fn it_works() {
-    let repo_dir = Path::new(".").join("test_repo");
+    let repo_dir = Path::new(".").join("test_repo1");
     if Path::exists(&repo_dir) {
         fs::remove_dir_all(&repo_dir).unwrap();
     }
@@ -54,19 +54,15 @@ fn it_works() {
     );
     another_branch_commit_history.push(commit_result.commit);
 
+    fs::create_dir(repo_dir.join("test_folder")).unwrap();
     modify_file(&repo_dir.join("test_file"), &String::from("something else")).unwrap();
-    modify_file(
-        &repo_dir.join("another_test_file"),
-        &String::from("some content here 2"),
-    )
-    .unwrap();
     assert_eq!(
         status_in_repo(repo_dir.clone()).unwrap(),
         StatusResult {
             branch: String::from("master"),
             file_changes: vec![
+                (FileChange::Added, repo_dir.join("test_folder")),
                 (FileChange::Modified, repo_dir.join("test_file")),
-                (FileChange::Added, repo_dir.join("another_test_file"))
             ]
         }
     );
@@ -77,8 +73,8 @@ fn it_works() {
     assert_eq!(
         commit_result.file_changes,
         vec![
+            (FileChange::Added, repo_dir.join("test_folder")),
             (FileChange::Modified, repo_dir.join("test_file")),
-            (FileChange::Added, repo_dir.join("another_test_file"))
         ]
     );
     let fork_commit = commit_result.commit;
@@ -100,7 +96,7 @@ fn it_works() {
     let last_master_commit = commit_result.commit;
 
     assert_eq!(
-        jump_commit_in_repo(repo_dir.clone(), &fork_commit).unwrap(),
+        jump_commit_in_repo(repo_dir.clone(), &fork_commit, None).unwrap(),
         JumpResult::Success {
             commit: fork_commit.clone(),
             branch: String::from("master")
